@@ -17,10 +17,10 @@ export const addTask = async (status: string, taskDetails: any) => {
 };
 
 // Delete a task
-export const deleteTask = async (status: string, taskId: string) => {
+export const deleteTask = async (status: string, id: string) => {
     const response = await axios.get(API_URL);
     const updatedTasks = response.data;
-    updatedTasks[status] = updatedTasks[status].filter((task: any) => task.id !== taskId);
+    updatedTasks[status] = updatedTasks[status].filter((task: any) => task.id !== id);
 
     await axios.put(API_URL, updatedTasks);
 };

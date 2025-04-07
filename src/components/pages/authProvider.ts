@@ -15,12 +15,12 @@ export const authProvider = {
     check: async () => {
         return localStorage.getItem("user") ? Promise.resolve() : Promise.reject();
     },
-
+    
     getPermissions: async () => {
-        const user = JSON.parse(localStorage.getItem("user") || "{}");
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
         return Promise.resolve(user.role);
     },
-
+    
     getIdentity: async () => {
         const user = JSON.parse(localStorage.getItem("user") || "{}");
         return Promise.resolve(user);

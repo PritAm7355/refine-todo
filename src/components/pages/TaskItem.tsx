@@ -1,7 +1,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Card, CardContent } from "../ui/card";
-import { Button } from "../ui/button";
+import { CardContent } from "../ui/card";
+import DeleteButton from "../DeleteButton";
 
 interface TaskItemProps {
     task: { id: string; task: string; description: string; assignee: string };
@@ -18,7 +18,7 @@ export default function TaskItem({ task, status, deleteTask }: TaskItemProps) {
     const style = {
         transform: CSS.Transform.toString(transform),
         transition
-    };
+    }; 
 
     return (
         <div 
@@ -32,7 +32,7 @@ export default function TaskItem({ task, status, deleteTask }: TaskItemProps) {
                 <p className="font-semibold">{task.task}</p>
                 <p className="text-sm">{task.description}</p>
                 <p className="text-xs text-gray-600">Assigned to: {task.assignee}</p>
-                <Button variant="destructive" onClick={() => deleteTask(status, task.id)}>Delete</Button>
+                <DeleteButton onDelete={ () => deleteTask(status, task.id)} />
             </CardContent>
         </div>
     );

@@ -9,13 +9,51 @@ export default function Login() {
   const navigate = useNavigate();
   
 
-  const handleLogin = () => {
-    if (username.trim() && roles) {
-      localStorage.setItem("userRole", role); // Store role as it is
-      localStorage.setItem("username", username);
-      localStorage.setItem("user",JSON.stringify({username,role}));
-      navigate("/dashboard/todo"); // Redirect to the To-Do app
+  const handleLogin = async () => {
+    if (username.trim() && role) {
+      try {
+        // 1️⃣ Fetch users from db.json
+        const response = await fetch("http://localhost:3001/users");
+        if (!response.ok) {
+          throw new Error("Failed to fetch users");
+        }
+        const users = await response.json();
 
+        // 2️⃣ Check if the user with both username and role exists
+        const existingUser = users.find(
+          (user: any) => user.username === username && user.role === role
+        );
+
+        if (existingUser) {
+          console.log("User already exists, logging in...");
+          localStorage.setItem("user", JSON.stringify(existingUser));
+        } else {
+          // 3️⃣ If new user, save to db.json
+          const newUser = { username, role };
+
+          const saveResponse = await fetch("http://localhost:3001/users", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(newUser),
+          });
+
+          if (!saveResponse.ok) {
+            throw new Error("Failed to save user");
+          }
+
+          localStorage.setItem("user", JSON.stringify(newUser));
+        }
+
+        // 4️⃣ Store in localStorage and Redirect
+        localStorage.setItem("userRole", role);
+        localStorage.setItem("username", username);
+        navigate("/dashboard/todo");
+      } catch (error) {
+        console.error("Error:", error);
+        alert("Error logging in. Try again.");
+      }
     } else {
       alert("Please enter a valid username and select a valid role.");
     }

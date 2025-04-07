@@ -28,6 +28,7 @@ export default function TaskBoard() {
         fetch(API_URL)
             .then(res => res.json())
             .then(data => {
+                console.log("Fetched tasks:", data);  
                 const groupedTasks = { backlog: [], open: [], "in-progress": [], completed: [] };
                 data.forEach(task => {
                     if (groupedTasks[task.status]) {
@@ -57,16 +58,61 @@ export default function TaskBoard() {
     };
 
     // Function to delete a task
+    // const deleteTask = async (status: string, id: string) => {
+    //     console.log("Delete Task Called - Status:", status);  // Check status
+    // console.log("Delete Task Called - ID:", id);  // Ensure id is not undefined
+    //     setTasks(prevTasks => ({
+    //         ...prevTasks,
+    //         [status]: prevTasks[status].filter(task => task.id !== id)
+    //     }));
+
+    //     // Delete from db.json
+    //     await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+    //     console.log(id)
+    // };
+
     const deleteTask = async (status: string, id: string) => {
-        setTasks(prevTasks => ({
-            ...prevTasks,
-            [status]: prevTasks[status].filter(task => task.id !== id)
-        }));
-
-        // Delete from db.json
-        await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+        console.log("deleteTask called with status:", status, "and id:", id);
+        
+        if (!id) {
+            console.error("Error: Task ID is undefined!");
+            return;
+        }
+    
+        try {
+            // First update the local state for immediate UI feedback
+            setTasks(prevTasks => {
+                console.log("Current tasks before deletion:", prevTasks);
+                const newTasks = {
+                    ...prevTasks,
+                    [status]: prevTasks[status].filter(task => {
+                        console.log("Comparing task.id:", task.id, "with id to delete:", id);
+                        return task.id !== id;
+                    })
+                };
+                console.log("Updated tasks after deletion:", newTasks);
+                return newTasks;
+            });
+    
+            // Then make the API call
+            console.log("Making DELETE request to:", `${API_URL}/${id}`);
+            const response = await fetch(`${API_URL}/${id}`, { 
+                method: "DELETE" 
+            });
+    
+            console.log("Delete API response status:", response.status);
+            
+            if (!response.ok) {
+                console.error("Failed to delete task! Response:", response.status);
+                // You might want to revert the state change here if the API call fails
+            } else {
+                console.log("Task successfully deleted from server!");
+            }
+        } catch (error) {
+            console.error("Error in deleteTask function:", error);
+        }
     };
-
+    
     // Drag Start Handler
     const onDragStart = (event: any) => {
         setActiveTask(event.active.data.current);
@@ -141,8 +187,15 @@ function Column({ status, tasks, deleteTask, newTasks, setNewTasks, addTask }) {
             <SortableContext items={tasks.map(task => task.id)} strategy={verticalListSortingStrategy}>
                 <div className="space-y-2">
                     {tasks.map((task) => (
-                        <TaskItem key={task.id} task={task} status={status} deleteTask={deleteTask} />
-                    ))}
+                        <TaskItem 
+                        key={task.id} 
+                        task={task} 
+                        status={status} 
+                        deleteTask={deleteTask} 
+                    />
+                    ),)
+                    }
+                    
                 </div>
             </SortableContext>
 

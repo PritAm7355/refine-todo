@@ -5,6 +5,7 @@ import { useDroppable } from "@dnd-kit/core";
 import TaskItem from "../pages/TaskItem";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "../ui/select";
 
 const API_URL = "http://localhost:3001/tasks"; // Adjust for your JSON server
 
@@ -16,6 +17,8 @@ export default function TaskBoard() {
         completed: []
     });
     const [activeTask, setActiveTask] = useState(null);
+    const [userRole, setUserRole] = useState<string | null>(null); // Store logged-in user's role
+
     const [newTasks, setNewTasks] = useState({
         backlog: { task: "", description: "", assignee: "" },
         open: { task: "", description: "", assignee: "" },
@@ -23,27 +26,45 @@ export default function TaskBoard() {
         completed: { task: "", description: "", assignee: "" }
     });
 
-    // Fetch tasks on mount
+    // Fetch the logged-in user's role
     useEffect(() => {
+        const userData = localStorage.getItem("user");
+        if (userData) {
+            const parsedUser = JSON.parse(userData);
+            setUserRole(parsedUser.role);
+        }
+    }, []);
+
+    // Fetch tasks and filter based on role
+    useEffect(() => {
+        if (!userRole) return; // Wait until we have the user's role
+
         fetch(API_URL)
             .then(res => res.json())
             .then(data => {
                 console.log("Fetched tasks:", data);  
                 const groupedTasks = { backlog: [], open: [], "in-progress": [], completed: [] };
+
                 data.forEach(task => {
-                    if (groupedTasks[task.status]) {
-                        groupedTasks[task.status].push(task);
+                    if (userRole === "Admin" || userRole === "Manager") {
+                        // Admin & Manager can see all tasks
+                        groupedTasks[task.status]?.push(task);
+                    } else if (task.assignee === userRole) {
+                        // Users & Guests only see their assigned tasks
+                        groupedTasks[task.status]?.push(task);
                     }
                 });
+
                 setTasks(groupedTasks);
             });
-    }, []);
+    }, [userRole]); // Fetch tasks whenever role changes
 
     // Function to add a new task
     const addTask = async (status: string) => {
         const taskDetails = newTasks[status];
         if (taskDetails.task && taskDetails.description && taskDetails.assignee) {
             const newTask = { ...taskDetails, id: Date.now().toString(), status };
+
             setTasks(prev => ({ ...prev, [status]: [...prev[status], newTask] }));
 
             // Persist to db.json
@@ -211,11 +232,15 @@ function Column({ status, tasks, deleteTask, newTasks, setNewTasks, addTask }) {
                     value={newTasks[status].description}
                     onChange={(e) => setNewTasks(prev => ({ ...prev, [status]: { ...prev[status], description: e.target.value } }))} 
                 />
-                <Input
-                    placeholder="Assignee"
-                    value={newTasks[status].assignee}
-                    onChange={(e) => setNewTasks(prev => ({ ...prev, [status]: { ...prev[status], assignee: e.target.value } }))} 
-                />
+                <Select onValueChange={(value) => setNewTasks(prev => ({ ...prev, [status]: { ...prev[status], assignee: value } }))}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select Assignee" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="User">User</SelectItem>
+                        <SelectItem value="Guest">Guest</SelectItem>
+                    </SelectContent>
+                </Select>
                 <Button onClick={() => addTask(status)}>Add Task</Button>
             </div>
         </div>
